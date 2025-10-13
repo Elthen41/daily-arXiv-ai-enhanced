@@ -665,10 +665,11 @@ main {
   transition: color 0.2s ease-in-out;
   user-select: none;
   z-index: 6;
+  line-height: 1;
 }
 
 .favorite-star::before {
-  content: '☆';
+  content: '\2606';
 }
 
 .favorite-star:hover {
@@ -680,7 +681,7 @@ main {
 }
 
 .favorite-star.favorited::before {
-  content: '★';
+  content: '\2605';
 }
 
 .paper-card.favorite-card {
