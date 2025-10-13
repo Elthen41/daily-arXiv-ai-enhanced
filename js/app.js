@@ -14,6 +14,8 @@ let currentFilteredPapers = []; // 当前过滤后的论文列表
 let textSearchQuery = ''; // 实时文本搜索查询
 let previousActiveKeywords = null; // 文本搜索激活时，暂存之前的关键词激活集合
 let previousActiveAuthors = null; // 文本搜索激活时，暂存之前的作者激活集合
+const FAVORITES_STORAGE_KEY = 'arxivFavorites';
+let favoritePaperIds = new Set();
 
 // 加载用户的关键词设置
 function loadUserKeywords() {
@@ -56,6 +58,111 @@ function loadUserAuthors() {
   }
   
   renderFilterTags();
+}
+
+function loadFavoritesFromStorage() {
+  try {
+    const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (!stored) {
+      favoritePaperIds = new Set();
+      return;
+    }
+
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      favoritePaperIds = new Set(parsed);
+    } else {
+      favoritePaperIds = new Set();
+    }
+  } catch (error) {
+    console.error('解析收藏数据失败:', error);
+    favoritePaperIds = new Set();
+  }
+}
+
+function saveFavoritesToStorage() {
+  try {
+    const serialized = JSON.stringify(Array.from(favoritePaperIds));
+    localStorage.setItem(FAVORITES_STORAGE_KEY, serialized);
+  } catch (error) {
+    console.error('保存收藏数据失败:', error);
+  }
+}
+
+function getPaperId(paper) {
+  if (!paper) {
+    return '';
+  }
+  const byId = (paper.id ?? '').toString().trim();
+  if (byId) {
+    return byId;
+  }
+  const byUrl = (paper.url ?? '').toString().trim();
+  if (byUrl) {
+    return byUrl;
+  }
+  const byTitle = (paper.title ?? '').toString().trim();
+  if (byTitle) {
+    return byTitle;
+  }
+  return '';
+}
+
+function applyFavoriteStateToStar(starElement, paperId) {
+  if (!starElement) {
+    return;
+  }
+  const isFavorited = favoritePaperIds.has(paperId);
+  starElement.classList.toggle('favorited', isFavorited);
+  starElement.setAttribute('title', isFavorited ? 'Remove from Favorites' : 'Add to Favorites');
+  starElement.setAttribute('aria-label', isFavorited ? 'Remove from Favorites' : 'Add to Favorites');
+  starElement.setAttribute('aria-pressed', isFavorited ? 'true' : 'false');
+}
+
+function updateFavoriteStars() {
+  const stars = document.querySelectorAll('.favorite-star');
+  stars.forEach(star => {
+    const card = star.closest('.paper-card');
+    if (!card) {
+      return;
+    }
+    applyFavoriteStateToStar(star, card.dataset.id);
+  });
+}
+
+function updateFavoritesButtonState() {
+  const favoritesButton = document.querySelector('.category-button[data-category="favorites"]');
+  if (!favoritesButton) {
+    return;
+  }
+
+  const countSpan = favoritesButton.querySelector('.category-count');
+  if (countSpan) {
+    countSpan.textContent = favoritePaperIds.size;
+  }
+
+  favoritesButton.setAttribute('title', favoritePaperIds.size > 0 ? '显示已收藏的论文' : '尚未收藏论文');
+}
+
+function toggleFavorite(paperId) {
+  if (!paperId) {
+    return;
+  }
+
+  if (favoritePaperIds.has(paperId)) {
+    favoritePaperIds.delete(paperId);
+  } else {
+    favoritePaperIds.add(paperId);
+  }
+
+  saveFavoritesToStorage();
+  updateFavoritesButtonState();
+
+  if (currentCategory === 'favorites') {
+    renderPapers();
+  } else {
+    updateFavoriteStars();
+  }
 }
 
 // 渲染过滤标签（作者和关键词）
@@ -209,6 +316,9 @@ function toggleAuthorFilter(author) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
+
+  loadFavoritesFromStorage();
+  updateFavoritesButtonState();
   
   fetchGitHubStats();
   
@@ -767,6 +877,15 @@ function getAllCategories(data) {
   };
 }
 
+function getAllPapers(data) {
+  return Object.values(data || {}).reduce((accumulator, items) => {
+    if (Array.isArray(items)) {
+      accumulator.push(...items);
+    }
+    return accumulator;
+  }, []);
+}
+
 function renderCategoryFilter(categories) {
   const container = document.querySelector('.category-scroll');
   const { sortedCategories, categoryCounts } = categories;
@@ -775,12 +894,17 @@ function renderCategoryFilter(categories) {
   Object.values(categoryCounts).forEach(count => {
     totalPapers += count;
   });
+  const favoritesCount = favoritePaperIds.size;
   
   container.innerHTML = `
     <button class="category-button ${currentCategory === 'all' ? 'active' : ''}" data-category="all">All<span class="category-count">${totalPapers}</span></button>
+    <button class="category-button ${currentCategory === 'favorites' ? 'active' : ''}" data-category="favorites">Favorites<span class="category-count">${favoritesCount}</span></button>
   `;
   
   sortedCategories.forEach(category => {
+    if (category === 'favorites') {
+      return;
+    }
     const count = categoryCounts[category];
     const button = document.createElement('button');
     button.className = `category-button ${category === currentCategory ? 'active' : ''}`;
@@ -793,9 +917,21 @@ function renderCategoryFilter(categories) {
     container.appendChild(button);
   });
   
-  document.querySelector('.category-button[data-category="all"]').addEventListener('click', () => {
-    filterByCategory('all');
-  });
+  const allButton = container.querySelector('.category-button[data-category="all"]');
+  if (allButton) {
+    allButton.addEventListener('click', () => {
+      filterByCategory('all');
+    });
+  }
+
+  const favoritesButton = container.querySelector('.category-button[data-category="favorites"]');
+  if (favoritesButton) {
+    favoritesButton.addEventListener('click', () => {
+      filterByCategory('favorites');
+    });
+  }
+
+  updateFavoritesButtonState();
 }
 
 function filterByCategory(category) {
@@ -843,7 +979,10 @@ function renderPapers() {
   container.className = `paper-container ${currentView === 'list' ? 'list-view' : ''}`;
   
   let papers = [];
-  if (currentCategory === 'all') {
+  if (currentCategory === 'favorites') {
+    const allPapers = getAllPapers(paperData);
+    papers = allPapers.filter(item => favoritePaperIds.has(getPaperId(item)));
+  } else if (currentCategory === 'all') {
     const { sortedCategories } = getAllCategories(paperData);
     sortedCategories.forEach(category => {
       if (paperData[category]) {
@@ -1089,7 +1228,8 @@ function renderPapers() {
     const paperCard = document.createElement('div');
     // 添加匹配高亮类
     paperCard.className = `paper-card ${paper.isMatched ? 'matched-paper' : ''}`;
-    paperCard.dataset.id = paper.id || paper.url;
+    const paperId = getPaperId(paper);
+    paperCard.dataset.id = paperId;
     
     if (paper.isMatched) {
       // 添加匹配原因提示
@@ -1126,6 +1266,7 @@ function renderPapers() {
       : paper.authors;
     
     paperCard.innerHTML = `
+      <span class="favorite-star" role="button" aria-label="Toggle favorite" aria-pressed="false" tabindex="0"></span>
       <div class="paper-card-index">${index + 1}</div>
       ${paper.isMatched ? '<div class="match-badge" title="匹配您的搜索条件"></div>' : ''}
       <div class="paper-card-header">
@@ -1148,6 +1289,23 @@ function renderPapers() {
       currentPaperIndex = index; // 记录当前点击的论文索引
       showPaperDetails(paper, index + 1);
     });
+    
+    const favoriteStar = paperCard.querySelector('.favorite-star');
+    if (favoriteStar && paperId) {
+      favoriteStar.addEventListener('click', (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        toggleFavorite(paperId);
+      });
+      favoriteStar.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleFavorite(paperId);
+        }
+      });
+      applyFavoriteStateToStar(favoriteStar, paperId);
+    }
     
     container.appendChild(paperCard);
   });
