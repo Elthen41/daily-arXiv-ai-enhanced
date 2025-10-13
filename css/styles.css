@@ -492,6 +492,37 @@ header {
   color: var(--text-color);
 }
 
+.category-button[data-category="favorites"] {
+  background: linear-gradient(140deg, rgba(255, 245, 196, 0.95) 0%, rgba(255, 218, 84, 0.95) 50%, rgba(255, 179, 0, 0.95) 100%);
+  color: #3a2500;
+  border: 1px solid rgba(255, 190, 0, 0.6);
+  box-shadow: 0 6px 18px rgba(255, 190, 0, 0.32);
+}
+
+.category-button[data-category="favorites"] .category-count {
+  background: rgba(255, 255, 255, 0.35);
+  color: #3a2500;
+}
+
+.category-button[data-category="favorites"]:hover {
+  background: linear-gradient(140deg, rgba(255, 248, 210, 0.98) 0%, rgba(255, 224, 110, 0.98) 50%, rgba(255, 193, 7, 0.98) 100%);
+  color: #2d1c00;
+  border-color: rgba(255, 193, 7, 0.7);
+  box-shadow: 0 8px 22px rgba(255, 190, 0, 0.4);
+}
+
+.category-button[data-category="favorites"].active {
+  background: linear-gradient(135deg, #ffd700 0%, #f4a301 100%);
+  color: #2d1c00;
+  border-color: rgba(255, 179, 0, 0.3);
+  box-shadow: 0 10px 24px rgba(255, 193, 7, 0.5);
+}
+
+.category-button[data-category="favorites"].active .category-count {
+  background: rgba(255, 255, 255, 0.28);
+  color: #2d1c00;
+}
+
 .category-button.active {
   background: var(--gradient-primary);
   color: white;
@@ -626,9 +657,9 @@ main {
 
 .favorite-star {
   position: absolute;
-  top: 12px;
-  right: 16px;
-  font-size: 20px;
+  top: 18px;
+  right: 20px;
+  font-size: 22px;
   color: #ccc;
   cursor: pointer;
   transition: color 0.2s ease-in-out;
@@ -645,11 +676,62 @@ main {
 }
 
 .favorite-star.favorited {
-  color: #ffc107;
+  color: #ff9800;
 }
 
 .favorite-star.favorited::before {
   content: '★';
+}
+
+.paper-card.favorite-card {
+  border: 2px solid rgba(255, 179, 0, 0.95);
+  box-shadow: 0 16px 40px rgba(255, 171, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  background-image: linear-gradient(150deg, rgba(255, 241, 176, 0.96) 0%, rgba(255, 213, 79, 0.96) 45%, rgba(255, 179, 0, 0.95) 100%);
+  color: #3a2500;
+}
+
+.paper-card.favorite-card:hover {
+  box-shadow: 0 20px 46px rgba(255, 171, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  transform: translateY(-3px);
+  background-image: linear-gradient(150deg, rgba(255, 244, 191, 0.99) 0%, rgba(255, 220, 110, 0.99) 45%, rgba(255, 193, 7, 0.99) 100%);
+  background-color: transparent;
+}
+
+.paper-card.favorite-card .paper-card-title,
+.paper-card.favorite-card .paper-card-authors,
+.paper-card.favorite-card .paper-card-summary,
+.paper-card.favorite-card .paper-card-date,
+.paper-card.favorite-card .paper-card-link {
+  color: #3a2500;
+}
+
+.paper-card.favorite-card .paper-card-categories .category-tag {
+  background: rgba(255, 255, 255, 0.55);
+  color: #5a3a00;
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.paper-card.favorite-card .paper-card-categories .category-tag:hover {
+  background: rgba(255, 255, 255, 0.7);
+  color: #3a2500;
+}
+
+.paper-card.favorite-card .paper-card-summary {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.paper-card.favorite-card .paper-card-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.paper-card.favorite-card .paper-card-footer {
+  color: #3a2500;
+}
+
+.paper-card.favorite-card .paper-card-link:hover {
+  color: #a06200;
 }
 
 .paper-card:hover {
@@ -659,7 +741,7 @@ main {
 }
 
 .paper-card-header {
-  padding: 16px;
+  padding: 16px 52px 16px 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -742,7 +824,7 @@ main {
 }
 
 .list-view .paper-card-header {
-  padding: 0;
+  padding: 0 48px 0 0;
   border-bottom: none;
   flex: 1;
 }

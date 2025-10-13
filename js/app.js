@@ -117,6 +117,10 @@ function applyFavoriteStateToStar(starElement, paperId) {
   starElement.setAttribute('title', isFavorited ? 'Remove from Favorites' : 'Add to Favorites');
   starElement.setAttribute('aria-label', isFavorited ? 'Remove from Favorites' : 'Add to Favorites');
   starElement.setAttribute('aria-pressed', isFavorited ? 'true' : 'false');
+  const card = starElement.closest('.paper-card');
+  if (card) {
+    card.classList.toggle('favorite-card', isFavorited);
+  }
 }
 
 function updateFavoriteStars() {
